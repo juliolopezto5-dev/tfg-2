@@ -1,0 +1,1187 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Academia de Chronos — Grieta del Reloj</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@500;600;700&family=Spectral:wght@400;500;600;700&display=swap');
+
+:root{
+  --void:#080a12; --void-2:#111729; --void-3:#1a2138;
+  --brass:#c9a15c; --brass-dim:#8a7245;
+  --parchment:#ece4d2; --parchment-dim:#a29a88;
+  --verdant:#5f8f6a; --danger:#c24444;
+  --blue-team:#4d8fd1; --red-team:#d15050;
+  --ring-track:#232b45;
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  min-height:100vh;
+  background:radial-gradient(circle at 50% -10%, #151d33 0%, transparent 55%),
+             radial-gradient(circle at 85% 90%, #121a2c 0%, transparent 45%), var(--void);
+  color:var(--parchment); font-family:'Spectral',serif;
+  display:flex; align-items:flex-start; justify-content:center; padding:24px; position:relative;
+}
+.stage{ position:relative; z-index:1; width:100%; max-width:940px; }
+.screen{ display:none; }
+.screen.active{ display:block; animation:fadeUp .45s ease; }
+@keyframes fadeUp{ from{opacity:0; transform:translateY(12px);} to{opacity:1; transform:translateY(0);} }
+@keyframes shakeCard{ 0%,100%{transform:translateX(0);} 20%{transform:translateX(-8px);} 40%{transform:translateX(7px);} 60%{transform:translateX(-5px);} 80%{transform:translateX(4px);} }
+@keyframes popIn{ 0%{transform:scale(.85); opacity:0;} 100%{transform:scale(1); opacity:1;} }
+@keyframes pulseCritical{ 0%,100%{filter:drop-shadow(0 0 0px var(--danger));} 50%{filter:drop-shadow(0 0 10px var(--danger));} }
+@keyframes burstOut{ 0%{transform:translate(-50%,-50%) scale(.2); opacity:1;} 100%{transform:translate(var(--bx),var(--by)) scale(1); opacity:0;} }
+@keyframes flashGood{ 0%{background:rgba(95,143,106,0.28);} 100%{background:rgba(95,143,106,0);} }
+@keyframes flashBad{ 0%{background:rgba(194,68,68,0.28);} 100%{background:rgba(194,68,68,0);} }
+@keyframes glowGold{ 0%,100%{box-shadow:0 0 0px rgba(201,161,92,0.4);} 50%{box-shadow:0 0 22px rgba(201,161,92,0.55);} }
+@keyframes shimmer{ 0%{transform:translateX(-40px);} 100%{transform:translateX(400px);} }
+@keyframes pulseOpac{ 0%,100%{opacity:0.55;} 50%{opacity:1;} }
+@keyframes bob{ 0%,100%{transform:translateY(0);} 50%{transform:translateY(-4px);} }
+@keyframes spinSlow{ from{transform:rotate(0deg);} to{transform:rotate(360deg);} }
+
+.eyebrow-title{ text-align:center; margin-bottom:26px; }
+.eyebrow-title h1{
+  font-family:'Cinzel',serif; font-weight:700; font-size:clamp(26px,5vw,38px); letter-spacing:0.02em; margin:0 0 8px 0;
+  background:linear-gradient(180deg,var(--brass) 0%, #8a7245 100%); -webkit-background-clip:text; background-clip:text; color:transparent;
+}
+.eyebrow-title p{ color:var(--parchment-dim); font-size:14px; margin:0; line-height:1.6; }
+
+.mode-grid{ display:grid; grid-template-columns:1fr 1fr; gap:16px; max-width:560px; margin:0 auto; }
+.mode-card{
+  background:linear-gradient(180deg,var(--void-2),var(--void-3)); border:1px solid #2a3252; border-radius:14px;
+  padding:26px 18px; text-align:center; cursor:pointer; transition:transform .2s ease, border-color .2s ease;
+}
+.mode-card:hover{ transform:translateY(-4px); border-color:var(--brass); }
+.mode-card .micon{ font-size:30px; margin-bottom:10px; }
+.mode-card h3{ font-family:'Cinzel',serif; font-size:16px; margin:0 0 6px 0; color:var(--brass); }
+.mode-card p{ font-size:12.5px; color:var(--parchment-dim); margin:0; line-height:1.5; }
+
+.avatar-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(190px,1fr)); gap:14px; }
+.avatar-card{
+  background:linear-gradient(180deg, var(--void-2), var(--void-3)); border:1px solid #2a3252; border-radius:12px;
+  padding:14px; cursor:pointer; transition:border-color .2s ease, transform .2s ease; text-align:center;
+}
+.avatar-card:hover{ transform:translateY(-4px); border-color:var(--card-accent, var(--brass)); }
+.avatar-card.disabled{ opacity:0.35; cursor:not-allowed; pointer-events:none; }
+.body-portrait{ width:100px; height:150px; margin:0 auto 8px auto; }
+.body-portrait svg{ width:100%; height:100%; display:block; filter:drop-shadow(0 6px 8px rgba(0,0,0,0.4)); }
+.role-tag{
+  display:inline-block; font-family:'Cinzel',serif; font-size:10px; letter-spacing:0.06em; padding:3px 9px; border-radius:20px; margin-bottom:6px;
+  background:rgba(201,161,92,0.12); color:var(--card-accent,var(--brass)); border:1px solid var(--card-accent,var(--brass));
+}
+.avatar-card h3{ font-family:'Cinzel',serif; font-size:15px; margin:0 0 2px 0; }
+.avatar-card .title{ font-size:11px; color:var(--parchment-dim); margin:0 0 8px 0; }
+.avatar-card p.passive{ font-size:11.5px; line-height:1.45; color:var(--parchment-dim); margin:0; text-align:left; }
+
+.lineup-wrap{ display:flex; gap:18px; align-items:stretch; margin-bottom:20px; flex-wrap:wrap; justify-content:center;}
+.team-col{ flex:1; min-width:230px; background:linear-gradient(180deg,var(--void-2),var(--void-3)); border-radius:12px; padding:16px; border:1px solid #2a3252; }
+.team-col h4{ font-family:'Cinzel',serif; font-size:13px; letter-spacing:0.05em; margin:0 0 12px 0; text-align:center; }
+.team-col.blue h4{ color:var(--blue-team); } .team-col.red h4{ color:var(--red-team); }
+.roster-row{ display:flex; align-items:center; gap:10px; padding:7px 0; border-bottom:1px solid rgba(255,255,255,0.05); }
+.roster-row:last-child{ border-bottom:none; }
+.roster-row .mini-portrait{ width:32px; height:32px; border-radius:50%; overflow:hidden; flex-shrink:0; border:1.5px solid var(--brass-dim); }
+.roster-row .mini-portrait svg{ width:100%; height:100%; }
+.roster-row .rinfo{ font-size:12.5px; }
+.roster-row .rinfo .rname{ font-weight:600; color:var(--parchment); }
+.roster-row .rinfo .rrole{ color:var(--parchment-dim); font-size:11px; }
+.roster-row.you{ background:rgba(201,161,92,0.08); border-radius:6px; padding:7px 6px; }
+.vs-mark{ align-self:center; font-family:'Cinzel',serif; font-size:22px; color:var(--brass); padding:0 4px; }
+.enemy-sigil{ width:32px; height:32px; border-radius:50%; background:radial-gradient(circle at 35% 30%, #5a2a2a, #2a1414); border:1.5px solid var(--red-team); flex-shrink:0; }
+.begin-btn{
+  display:block; margin:6px auto 0 auto; font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.04em; padding:14px 34px; border-radius:8px;
+  border:1px solid var(--brass); background:var(--brass); color:var(--void); cursor:pointer; font-weight:700;
+}
+.begin-btn:hover{ background:#dab26f; }
+.begin-btn:disabled{ opacity:0.4; cursor:not-allowed; }
+.secondary-btn{
+  display:inline-block; font-family:'Cinzel',serif; font-size:13px; letter-spacing:0.03em; padding:10px 20px; border-radius:8px;
+  border:1px solid var(--brass-dim); background:transparent; color:var(--brass); cursor:pointer;
+}
+.secondary-btn:hover{ border-color:var(--brass); }
+
+/* mp menu / lobby */
+.mp-box{ max-width:420px; margin:0 auto; background:linear-gradient(180deg,var(--void-2),var(--void-3)); border:1px solid #2a3252; border-radius:12px; padding:22px; text-align:center; }
+.mp-box input{ width:100%; font-family:'Cinzel',serif; letter-spacing:0.15em; text-align:center; font-size:20px; padding:12px; border-radius:8px; border:1px solid #2a3252; background:var(--void-3); color:var(--parchment); margin:12px 0; text-transform:uppercase; }
+.code-display{ font-family:'Cinzel',serif; font-size:32px; letter-spacing:0.2em; color:var(--brass); margin:14px 0; }
+.lobby-players{ margin:16px 0; text-align:left; }
+.lobby-player-row{ display:flex; align-items:center; gap:10px; padding:8px 10px; background:var(--void-3); border-radius:8px; margin-bottom:6px; }
+.lobby-player-row .mini-portrait{ width:30px;height:30px;border-radius:50%; overflow:hidden; border:1.5px solid var(--brass-dim); }
+.lobby-player-row .mini-portrait svg{ width:100%;height:100%; }
+.lobby-player-row span.pname{ font-size:13px; font-weight:600; }
+.lobby-player-row span.prole{ font-size:11px; color:var(--parchment-dim); margin-left:auto; }
+.lobby-status{ font-size:12.5px; color:var(--parchment-dim); margin:10px 0; }
+
+.match-header{ display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+.nexus-bar-wrap{ flex:1; }
+.nexus-bar-wrap .lbl{ font-family:'Cinzel',serif; font-size:10.5px; letter-spacing:0.05em; margin-bottom:4px; display:flex; justify-content:space-between; }
+.nexus-track{ height:9px; border-radius:6px; background:var(--ring-track); overflow:hidden; }
+.nexus-fill{ height:100%; border-radius:6px; transition:width .5s ease; }
+.nexus-fill.blue{ background:linear-gradient(90deg,#3a6fa8,var(--blue-team)); }
+.nexus-fill.red{ background:linear-gradient(90deg,var(--red-team),#a83a3a); }
+.timer-mini{ display:flex; flex-direction:column; align-items:center; width:60px; flex-shrink:0; }
+.timer-mini svg{ width:52px; height:52px; }
+.timer-mini .tnum{ font-family:'Cinzel',serif; font-size:14px; margin-top:-40px; }
+
+.buff-banner{ text-align:center; font-size:11.5px; color:var(--brass); min-height:16px; margin-bottom:8px; letter-spacing:0.02em; }
+
+.turn-strip{ display:flex; gap:6px; justify-content:center; margin-bottom:10px; flex-wrap:wrap; }
+.turn-chip{ display:flex; align-items:center; gap:5px; font-size:11px; padding:4px 9px 4px 4px; border-radius:20px; background:var(--void-3); border:1px solid #2a3252; color:var(--parchment-dim); }
+.turn-chip .tc-portrait{ width:20px;height:20px;border-radius:50%; overflow:hidden; }
+.turn-chip .tc-portrait svg{ width:100%;height:100%; }
+.turn-chip.active{ border-color:var(--brass); color:var(--brass); animation:pulseOpac 1.4s ease-in-out infinite; }
+
+.map-wrap{ position:relative; background:linear-gradient(180deg,#0d1424,#0a0f1c); border:1px solid #232c48; border-radius:12px; padding:8px; margin-bottom:14px; overflow:hidden; }
+.map-wrap svg{ width:100%; height:auto; display:block; }
+.lane-role-label{ text-align:center; font-family:'Cinzel',serif; font-size:11px; letter-spacing:0.06em; color:var(--brass); margin-bottom:2px; }
+
+.hud-row{ display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+.hud-avatar{ display:flex; align-items:center; gap:8px; font-size:12.5px; color:var(--parchment-dim); }
+.hud-avatar .hportrait{ width:26px; height:26px; border-radius:50%; overflow:hidden; border:1px solid var(--brass); }
+.hud-avatar .hportrait svg{ width:100%;height:100%; }
+.hud-qcount{ font-family:'Cinzel',serif; font-size:12px; color:var(--brass); }
+
+.subject-label{ text-align:center; font-family:'Cinzel',serif; font-size:11px; letter-spacing:0.08em; color:var(--brass-dim); margin-bottom:4px; }
+.qtype-label{ text-align:center; font-size:11px; color:var(--parchment-dim); margin-bottom:10px; }
+
+.question-card{
+  background:linear-gradient(180deg, var(--void-2), var(--void-3)); border:1px solid #2a3252; border-radius:12px; padding:22px 20px;
+  text-align:center; min-height:60px; position:relative; overflow:hidden; animation:popIn .35s ease;
+}
+.question-card.objective{ border-color:var(--brass); animation:glowGold 1.4s ease-in-out infinite, popIn .35s ease; }
+.question-card.shake{ animation:shakeCard .4s ease; }
+.question-card p.qtext{ font-size:18px; line-height:1.5; margin:0; color:var(--parchment); }
+.question-card .blank{ display:inline-block; border-bottom:2px solid var(--brass); min-width:70px; margin:0 3px; }
+.flash-overlay{ position:absolute; inset:0; pointer-events:none; border-radius:12px; }
+.flash-overlay.good{ animation:flashGood .7s ease; } .flash-overlay.bad{ animation:flashBad .7s ease; }
+
+.waiting-note{ text-align:center; font-size:13.5px; color:var(--parchment-dim); padding:20px; }
+
+.answers{ margin-top:16px; }
+.opt-grid, .bool-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+.opt-btn{
+  font-family:'Spectral',serif; font-size:15px; padding:14px 12px; border-radius:8px; border:1px solid #2a3252;
+  background:var(--void-3); color:var(--parchment); cursor:pointer; transition:border-color .15s ease, transform .1s ease;
+}
+.opt-btn:hover:not(:disabled){ border-color:var(--brass); transform:translateY(-1px); }
+.opt-btn.correct{ border-color:var(--verdant); background:#1b3324; animation:popIn .25s ease; }
+.opt-btn.wrong{ border-color:var(--danger); background:#3a1d1d; }
+.opt-btn:disabled{ cursor:default; opacity:0.85; }
+
+.text-answer{ display:flex; gap:8px; margin-top:2px; }
+.text-answer input{ flex:1; font-family:'Spectral',serif; font-size:16px; padding:12px 14px; border-radius:8px; border:1px solid #2a3252; background:var(--void-3); color:var(--parchment); }
+.text-answer input:focus{ outline:none; border-color:var(--brass); }
+.text-answer button{ font-family:'Cinzel',serif; font-size:13px; letter-spacing:0.03em; padding:0 20px; border-radius:8px; border:1px solid var(--brass); background:var(--brass); color:var(--void); cursor:pointer; font-weight:600; }
+.text-answer button:hover{ background:#dab26f; }
+
+.feedback-line{ margin-top:12px; min-height:20px; font-size:13.5px; text-align:center; }
+.feedback-line.good{ color:var(--verdant); } .feedback-line.bad{ color:var(--danger); }
+.buff-flag{ text-align:center; font-size:12px; min-height:16px; color:var(--brass); margin-top:6px; }
+
+.progress-dots{ display:flex; flex-wrap:wrap; gap:6px; justify-content:center; margin-top:16px; }
+.progress-dots span{ width:8px;height:8px;border-radius:50%; background:var(--ring-track); }
+.progress-dots span.hit{ background:var(--verdant); } .progress-dots span.miss{ background:var(--danger); }
+.progress-dots span.now{ outline:2px solid var(--brass); outline-offset:2px; }
+
+.particle-layer{ position:absolute; inset:0; pointer-events:none; overflow:visible; }
+.particle{ position:absolute; top:50%; left:50%; width:6px; height:6px; border-radius:50%; background:var(--verdant); animation:burstOut .7s ease-out forwards; }
+
+.gather-overlay{ position:fixed; inset:0; background:rgba(4,6,12,0.86); display:none; align-items:center; justify-content:center; z-index:50; }
+.gather-overlay.active{ display:flex; }
+.gather-box{ text-align:center; }
+.gather-box h3{ font-family:'Cinzel',serif; color:var(--brass); font-size:20px; margin:0 0 20px 0; letter-spacing:0.03em; }
+.gather-ring{ position:relative; width:220px; height:220px; margin:0 auto; }
+.gather-center{ position:absolute; top:50%; left:50%; transform:translate(-50%,-50%); width:46px; height:46px; border-radius:50%; background:radial-gradient(circle,var(--brass),#7a611f); box-shadow:0 0 18px rgba(201,161,92,0.6); animation:spinSlow 6s linear infinite; }
+.ally-dot{ position:absolute; width:26px; height:26px; border-radius:50%; border:2px solid var(--brass-dim); transition:top 1.1s ease, left 1.1s ease; overflow:hidden; }
+.ally-dot svg{ width:100%; height:100%; }
+.gather-sub{ margin-top:16px; font-size:13px; color:var(--parchment-dim); }
+
+.end-card{ text-align:center; padding:10px 6px; }
+.end-card h2{ font-family:'Cinzel',serif; font-size:28px; margin:0 0 10px 0; }
+.end-card.win h2{ color:var(--verdant); } .end-card.lose h2{ color:var(--danger); }
+.end-card p.sub{ color:var(--parchment-dim); font-size:14.5px; margin:0 0 22px 0; }
+.stat-row{ display:flex; justify-content:center; gap:26px; margin-bottom:26px; flex-wrap:wrap; }
+.stat{ min-width:100px; } .stat .num{ font-family:'Cinzel',serif; font-size:24px; color:var(--brass); }
+.stat .lbl{ font-size:11px; color:var(--parchment-dim); letter-spacing:0.03em; }
+.retry-btn{ font-family:'Cinzel',serif; font-size:14px; letter-spacing:0.03em; padding:14px 30px; border-radius:8px; border:1px solid var(--brass); background:transparent; color:var(--brass); cursor:pointer; font-weight:600; }
+.retry-btn:hover{ background:var(--brass); color:var(--void); }
+
+@media (max-width:560px){
+  .opt-grid, .bool-grid{ grid-template-columns:1fr; }
+  .lineup-wrap{ flex-direction:column; } .vs-mark{ display:none; }
+  .mode-grid{ grid-template-columns:1fr; }
+}
+</style>
+</head>
+<body>
+
+<div class="stage">
+
+  <!-- HOME -->
+  <div class="screen active" id="screen-home">
+    <div class="eyebrow-title">
+      <h1>Academia de Chronos</h1>
+      <p>La Grieta del Reloj espera. Cinco líneas, diez campeones, un núcleo que proteger.</p>
+    </div>
+    <div class="mode-grid">
+      <div class="mode-card" id="mode-solo"><div class="micon">🧙</div><h3>Individual</h3><p>Juega solo con cuatro aliados arcanos controlados por la Academia.</p></div>
+      <div class="mode-card" id="mode-mp"><div class="micon">🔗</div><h3>Multijugador</h3><p>Crea una sala o únete con un código para jugar por turnos con más gente.</p></div>
+    </div>
+  </div>
+
+  <!-- MP MENU -->
+  <div class="screen" id="screen-mp-menu">
+    <div class="eyebrow-title"><h1 style="font-size:26px;">Sala multijugador</h1><p>Crea una sala nueva o únete a una existente con su código.</p></div>
+    <div class="mp-box">
+      <button class="begin-btn" id="mp-create-btn">Crear partida</button>
+      <p style="margin:16px 0 6px 0; color:var(--parchment-dim); font-size:12px;">— o —</p>
+      <input type="text" id="mp-join-input" placeholder="CÓDIGO DE SALA" maxlength="5">
+      <button class="secondary-btn" id="mp-join-btn">Unirse con código</button>
+      <p id="mp-menu-error" style="color:var(--danger); font-size:12px; min-height:16px; margin-top:10px;">&nbsp;</p>
+    </div>
+  </div>
+
+  <!-- AVATAR SELECT -->
+  <div class="screen" id="screen-avatars">
+    <div class="eyebrow-title">
+      <h1 id="avatar-title">Elige tu campeón</h1>
+      <p>Diez campeones, cinco roles. Cada uno altera el ritmo de la partida a su manera.</p>
+    </div>
+    <div class="avatar-grid" id="avatar-grid"></div>
+  </div>
+
+  <!-- LOBBY (mp) -->
+  <div class="screen" id="screen-lobby">
+    <div class="eyebrow-title"><h1 style="font-size:26px;">Sala de espera</h1><p>Comparte este código para que se unan más jugadores.</p></div>
+    <div class="mp-box">
+      <div class="code-display" id="lobby-code-display">-----</div>
+      <div class="lobby-players" id="lobby-players"></div>
+      <div class="lobby-status" id="lobby-status">Esperando jugadores…</div>
+      <button class="begin-btn" id="lobby-start-btn">Iniciar partida</button>
+    </div>
+  </div>
+
+  <!-- LINEUP (solo) -->
+  <div class="screen" id="screen-lineup">
+    <div class="eyebrow-title"><h1 style="font-size:26px;">Formación de equipos</h1><p>Equipo Chronos contra la Academia Umbra. Cinco contra cinco, línea contra línea.</p></div>
+    <div class="lineup-wrap">
+      <div class="team-col blue"><h4>EQUIPO CHRONOS</h4><div id="blue-roster"></div></div>
+      <div class="vs-mark">VS</div>
+      <div class="team-col red"><h4>ACADEMIA UMBRA</h4><div id="red-roster"></div></div>
+    </div>
+    <button class="begin-btn" id="begin-btn">Entrar a la Grieta</button>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="screen-game">
+    <div class="match-header">
+      <div class="nexus-bar-wrap">
+        <div class="lbl"><span style="color:var(--blue-team)">NÚCLEO CHRONOS</span><span id="blue-hp-num">100</span></div>
+        <div class="nexus-track"><div class="nexus-fill blue" id="blue-hp-fill" style="width:100%"></div></div>
+      </div>
+      <div class="timer-mini" id="timer-mini">
+        <svg viewBox="0 0 60 60">
+          <circle cx="30" cy="30" r="25" fill="none" stroke="#232b45" stroke-width="6"></circle>
+          <circle cx="30" cy="30" r="25" fill="none" stroke="#c9a15c" stroke-width="6" stroke-linecap="round" id="timer-ring" transform="rotate(-90 30 30)"></circle>
+        </svg>
+        <div class="tnum" id="timer-num">100</div>
+      </div>
+      <div class="nexus-bar-wrap">
+        <div class="lbl"><span id="red-hp-num">100</span><span style="color:var(--red-team)">NÚCLEO UMBRA</span></div>
+        <div class="nexus-track"><div class="nexus-fill red" id="red-hp-fill" style="width:100%"></div></div>
+      </div>
+    </div>
+
+    <div class="buff-banner" id="buff-banner">&nbsp;</div>
+    <div class="turn-strip" id="turn-strip" style="display:none;"></div>
+
+    <div class="map-wrap"><svg id="map-svg" viewBox="0 0 400 400"></svg></div>
+    <div class="lane-role-label" id="lane-role-label">LÍNEA MEDIA</div>
+
+    <div class="hud-row">
+      <div class="hud-avatar"><span class="hportrait" id="hud-portrait"></span><span id="hud-name"></span></div>
+      <div class="hud-qcount" id="hud-qcount">Pregunta 1/20</div>
+    </div>
+
+    <div class="subject-label" id="subject-label">MATEMÁTICAS</div>
+    <div class="qtype-label" id="qtype-label">Deducción directa</div>
+
+    <div class="question-card" id="question-card">
+      <div class="flash-overlay" id="flash-overlay"></div>
+      <div class="particle-layer" id="particle-layer"></div>
+      <p class="qtext" id="qtext">Cargando pregunta...</p>
+    </div>
+
+    <div class="answers" id="answers-area"></div>
+    <div class="feedback-line" id="feedback-line">&nbsp;</div>
+    <div class="buff-flag" id="buff-flag">&nbsp;</div>
+    <div class="progress-dots" id="progress-dots"></div>
+  </div>
+
+  <!-- END -->
+  <div class="screen" id="screen-end">
+    <div class="end-card" id="end-card">
+      <h2 id="end-title">Resultado</h2>
+      <p class="sub" id="end-sub">detalle</p>
+      <div class="stat-row">
+        <div class="stat"><div class="num" id="stat-correct">0</div><div class="lbl">ACIERTOS</div></div>
+        <div class="stat"><div class="num" id="stat-blue">0</div><div class="lbl">NÚCLEO PROPIO</div></div>
+        <div class="stat"><div class="num" id="stat-red">0</div><div class="lbl">NÚCLEO RIVAL</div></div>
+      </div>
+      <button class="retry-btn" id="retry-btn">Volver al inicio</button>
+    </div>
+  </div>
+
+</div>
+
+<div class="gather-overlay" id="gather-overlay">
+  <div class="gather-box">
+    <h3 id="gather-title">Vuestro equipo converge sobre el objetivo…</h3>
+    <div class="gather-ring" id="gather-ring"><div class="gather-center"></div></div>
+    <div class="gather-sub" id="gather-sub">Reuniendo aliados…</div>
+  </div>
+</div>
+
+<script>
+/* =========================================================
+   ARTE ORIGINAL: plantillas de retrato (busto) y cuerpo entero
+   ========================================================= */
+const BODY_D = "M60 58 C42 58 32 76 30 104 L24 178 L96 178 L90 104 C88 76 78 58 60 58 Z";
+const ARML_D = "M32 96 C24 100 20 112 24 124 L34 118 Z";
+const ARMR_D = "M88 96 C96 100 100 112 96 124 L86 118 Z";
+
+function buildBody(av){
+  return `<defs><radialGradient id="bg-${av.id}" cx="35%" cy="25%" r="80%">
+    <stop offset="0%" stop-color="${av.c1}"/><stop offset="60%" stop-color="${av.c2}"/><stop offset="100%" stop-color="${av.c3}"/>
+  </radialGradient></defs>
+  <ellipse cx="60" cy="182" rx="30" ry="7" fill="#000" opacity="0.35"/>
+  <path d="${BODY_D}" fill="url(#bg-${av.id})"/>
+  <path d="${ARML_D}" fill="url(#bg-${av.id})"/><path d="${ARMR_D}" fill="url(#bg-${av.id})"/>
+  <circle cx="60" cy="40" r="20" fill="url(#bg-${av.id})"/>
+  ${av.decorBody}`;
+}
+function buildIcon(av){
+  return `<defs><radialGradient id="ic-${av.id}" cx="35%" cy="30%" r="75%">
+    <stop offset="0%" stop-color="${av.c1}"/><stop offset="55%" stop-color="${av.c2}"/><stop offset="100%" stop-color="${av.c3}"/>
+  </radialGradient></defs>
+  <rect width="100" height="100" fill="url(#ic-${av.id})"/>
+  ${av.decorIcon}`;
+}
+
+/* =========================================================
+   CAMPEONES (10) — nombres y estética originales, inspirados
+   en la estructura de rol de un MOBA 5v5 (no son personajes
+   de League of Legends; esos son propiedad de Riot Games)
+   ========================================================= */
+const AVATARS_RAW = [
+  { id:'ignis', name:'Ignis', title:'Alquimista Solar', role:'TOP', accent:'#d9663b',
+    c1:'#f2a25c', c2:'#d9663b', c3:'#5c2410',
+    decorIcon:`<path d="M50 20 C40 35 34 45 40 58 C43 65 55 66 58 58 C62 68 50 80 40 76 C24 70 22 46 38 28 C42 24 47 21 50 20 Z" fill="#ffe3b0" opacity="0.9"/><path d="M50 40 C46 48 44 54 48 60 C50 63 55 62 56 58 C58 63 52 69 46 66 C38 62 38 50 46 42 Z" fill="#c8401f"/>`,
+    decorBody:`<path d="M60 14 C52 26 47 34 52 44 C55 50 65 50 68 44 C72 52 60 62 51 58 C38 53 37 32 51 18 Z" fill="#ffe3b0" opacity="0.9"/><path d="M46 108 L74 108 L70 150 L50 150 Z" fill="#c8401f" opacity="0.85"/>`,
+    passive:'Combustión Mental: cada 3 aciertos seguidos incinera la penalización (+tiempo o +daño según el modo).' },
+
+  { id:'khorvath', name:'Khorvath', title:'Golem de Chronos', role:'JUNGLA', accent:'#c9a15c',
+    c1:'#e2c186', c2:'#c9a15c', c3:'#5e4c26',
+    decorIcon:`<polygon points="50,22 74,36 74,64 50,78 26,64 26,36" fill="#3a3325" opacity="0.85"/><polygon points="50,32 66,41 66,59 50,68 34,59 34,41" fill="#8f7c4a"/><circle cx="42" cy="48" r="3.5" fill="#f2d78a"/><circle cx="58" cy="48" r="3.5" fill="#f2d78a"/><line x1="50" y1="22" x2="50" y2="10" stroke="#3a3325" stroke-width="3"/><circle cx="50" cy="8" r="4" fill="#f2d78a"/>`,
+    decorBody:`<polygon points="60,18 78,30 78,50 60,62 42,50 42,30" fill="#3a3325" opacity="0.85"/><circle cx="60" cy="40" r="4" fill="#f2d78a"/><polygon points="40,108 80,108 76,150 44,150" fill="#8f7c4a"/>`,
+    passive:'Distorsión Temporal: mitiga en gran parte el castigo por fallo (menos aceleración o menos daño recibido).' },
+
+  { id:'aethelgard', name:'Aethelgard', title:'Archivero Astral', role:'MEDIA', accent:'#8177b8',
+    c1:'#b3a6dd', c2:'#8177b8', c3:'#332c5c',
+    decorIcon:`<circle cx="30" cy="28" r="1.6" fill="#ece4d2"/><circle cx="68" cy="22" r="1.2" fill="#ece4d2"/><circle cx="76" cy="44" r="1.4" fill="#ece4d2"/><circle cx="22" cy="60" r="1.1" fill="#ece4d2"/><path d="M50 30 C34 30 26 44 30 58 C33 68 44 74 50 74 C56 74 67 68 70 58 C74 44 66 30 50 30 Z" fill="#e7e1f5" opacity="0.92"/><path d="M40 50 C42 46 58 46 60 50 C58 56 42 56 40 50 Z" fill="#4a3f7f"/>`,
+    decorBody:`<path d="M60 30 C48 30 42 40 44 50 C46 58 54 62 60 62 C66 62 74 58 76 50 C78 40 72 30 60 30 Z" fill="#e7e1f5" opacity="0.9"/><circle cx="40" cy="20" r="1.4" fill="#ece4d2"/><circle cx="80" cy="16" r="1.1" fill="#ece4d2"/><circle cx="88" cy="34" r="1.3" fill="#ece4d2"/><polygon points="60,108 68,120 60,132 52,120" fill="#4a3f7f"/>`,
+    passive:'Premonición de Cristal: en preguntas de opciones, desintegra parte de las respuestas erróneas.' },
+
+  { id:'vespera', name:'Vespera', title:'Bruja del Vacío', role:'TIRADOR', accent:'#a04b76',
+    c1:'#c987a4', c2:'#a04b76', c3:'#3e1a2c',
+    decorIcon:`<path d="M50 20 C30 26 20 44 26 62 C29 70 40 76 50 76 C60 76 71 70 74 62 C80 44 70 26 50 20 Z" fill="#1c0f18" opacity="0.75"/><path d="M50 30 C38 34 32 46 36 58 C39 66 45 70 50 70 C55 70 61 66 64 58 C68 46 62 34 50 30 Z" fill="#2c1826"/><circle cx="43" cy="48" r="2.4" fill="#e6a8c4"/><circle cx="57" cy="48" r="2.4" fill="#e6a8c4"/>`,
+    decorBody:`<path d="M60 16 L74 34 L60 30 L46 34 Z" fill="#2c1826"/><ellipse cx="86" cy="70" rx="8" ry="5" fill="#160b12"/><path d="M50 108 L70 108 L64 150 L56 150 Z" fill="#2c1826" opacity="0.85"/>`,
+    passive:'Pacto Umbrío: responder en menos de 2s duplica tu recompensa, pero fallar cerca del colapso duplica el castigo.' },
+
+  { id:'sylva', name:'Sylva', title:'Tejedora de Raíces', role:'SOPORTE', accent:'#5f8f6a',
+    c1:'#8fc199', c2:'#5f8f6a', c3:'#264a2f',
+    decorIcon:`<path d="M50 18 C58 26 60 34 54 40 C60 40 66 34 66 26 C72 34 70 46 60 50 C68 52 74 46 76 38 C78 50 68 60 56 58 C48 63 40 63 34 58 C22 60 12 50 14 38 C16 46 22 52 30 50 C20 46 18 34 24 26 C24 34 30 40 36 40 C30 34 32 26 40 18 C42 26 46 32 50 34 C54 32 48 26 50 18 Z" fill="#dff0d8" opacity="0.92"/><circle cx="50" cy="58" r="7" fill="#3d6b45"/>`,
+    decorBody:`<path d="M46 108 C54 116 66 116 74 108 L70 150 L50 150 Z" fill="#3d6b45" opacity="0.85"/><path d="M60 14 C66 22 68 30 62 36 C68 36 74 30 74 22 C80 30 78 42 68 46" fill="none" stroke="#dff0d8" stroke-width="2" opacity="0.85"/>`,
+    passive:'Fotosíntesis: acertar con el equipo en apuros regenera tiempo o cura tu propio núcleo.' },
+
+  { id:'ferrovox', name:'Ferrovox', title:'Heraldo de Hierro', role:'TOP', accent:'#8a97ab',
+    c1:'#cdd6e3', c2:'#8a97ab', c3:'#33394a',
+    decorIcon:`<path d="M36 26 L64 26 L64 40 C64 48 56 56 50 56 C44 56 36 48 36 40 Z" fill="#5c6577"/><rect x="38" y="36" width="24" height="5" fill="#1c2029"/>`,
+    decorBody:`<path d="M46 24 L74 24 L74 40 C74 48 66 54 60 54 C54 54 46 48 46 40 Z" fill="#5c6577"/><rect x="48" y="34" width="24" height="5" fill="#1c2029"/><rect x="26" y="88" width="16" height="14" rx="3" fill="#5c6577"/><rect x="78" y="88" width="16" height="14" rx="3" fill="#5c6577"/>`,
+    passive:'Blindaje Templado: reduce de forma permanente el daño que recibe tu núcleo al fallar.' },
+
+  { id:'nyxira', name:'Nyxira', title:'Cazadora de Sombras', role:'JUNGLA', accent:'#5b4d8a',
+    c1:'#9a8ec9', c2:'#5b4d8a', c3:'#211a3a',
+    decorIcon:`<polygon points="36,22 30,8 42,18" fill="#3a2f5c"/><polygon points="64,22 70,8 58,18" fill="#3a2f5c"/><circle cx="42" cy="48" r="2.4" fill="#e6dcff"/><circle cx="58" cy="48" r="2.4" fill="#e6dcff"/>`,
+    decorBody:`<polygon points="46,20 40,6 52,16" fill="#3a2f5c"/><polygon points="74,20 80,6 68,16" fill="#3a2f5c"/><path d="M40 100 L48 116 M50 98 L58 118 M60 98 L66 118" stroke="#1c1730" stroke-width="2" opacity="0.7"/>`,
+    passive:'Emboscada: tu primer acierto tras un fallo inflige el doble de daño al núcleo rival.' },
+
+  { id:'zephyrion', name:'Zephyrion', title:'Custodio del Viento', role:'MEDIA', accent:'#7cb8c4',
+    c1:'#cdeef2', c2:'#7cb8c4', c3:'#2c4d54',
+    decorIcon:`<path d="M50 18 C60 18 66 26 62 34 C58 40 48 40 46 32 C45 28 48 25 52 26" fill="none" stroke="#eafcff" stroke-width="2" opacity="0.85"/>`,
+    decorBody:`<path d="M60 20 C70 20 76 28 72 36 C68 42 58 42 56 34 C55 30 58 27 62 28" fill="none" stroke="#eafcff" stroke-width="2" opacity="0.85"/><path d="M40 108 C50 118 70 118 80 108 L74 128 L46 128 Z" fill="#7cb8c4" opacity="0.6"/>`,
+    passive:'Corriente Ascendente: las conexiones conceptuales acertadas otorgan una bonificación extra.' },
+
+  { id:'kaelith', name:'Kaelith', title:'Arquera Estelar', role:'TIRADOR', accent:'#5aa78c',
+    c1:'#bfe6d8', c2:'#5aa78c', c3:'#244a3c',
+    decorIcon:`<polygon points="50,50 54,60 64,60 56,66 59,76 50,70 41,76 44,66 36,60 46,60" fill="#f2e6b3"/>`,
+    decorBody:`<path d="M20 90 C14 106 14 124 20 140" fill="none" stroke="#e8d9a0" stroke-width="3"/><rect x="90" y="70" width="6" height="30" rx="2" fill="#7a5c2c"/><polygon points="60,104 64,114 74,114 66,120 69,130 60,124 51,130 54,120 46,114 56,114" fill="#f2e6b3"/>`,
+    passive:'Tiro Certero: dos aciertos seguidos cargan un golpe crítico en el siguiente acierto.' },
+
+  { id:'mossgrave', name:'Mossgrave', title:'Guardián Ancestral', role:'SOPORTE', accent:'#6f8f5a',
+    c1:'#b7c99a', c2:'#6f8f5a', c3:'#33421f',
+    decorIcon:`<path d="M40 24 L34 12 M40 24 L36 14 M60 24 L66 12 M60 24 L64 14" stroke="#4a3a22" stroke-width="2" fill="none"/><circle cx="30" cy="60" r="4" fill="#8aa66a" opacity="0.8"/>`,
+    decorBody:`<path d="M48 22 L40 8 M48 22 L44 10 M72 22 L80 8 M72 22 L76 10" stroke="#4a3a22" stroke-width="2" fill="none"/><circle cx="34" cy="96" r="5" fill="#8aa66a" opacity="0.8"/><circle cx="86" cy="100" r="4" fill="#8aa66a" opacity="0.8"/><line x1="20" y1="70" x2="20" y2="170" stroke="#6b5735" stroke-width="3"/><circle cx="20" cy="66" r="6" fill="#c9d9a8"/>`,
+    passive:'Vínculo Ancestral: cada acierto regenera un poco la vida de tu propio núcleo.' }
+];
+AVATARS_RAW.forEach(av=>{ av.icon = buildIcon(av); av.body = buildBody(av); });
+const AVATARS = AVATARS_RAW;
+const ROLE_ORDER = ['TOP','JUNGLA','MEDIA','TIRADOR','SOPORTE'];
+function wrap(inner, vb){ return `<svg viewBox="${vb}" xmlns="http://www.w3.org/2000/svg">${inner}</svg>`; }
+
+/* Emblema genérico de la Academia Umbra (rival) */
+const UMBRA_CREST = `<defs><radialGradient id="umbraGrad" cx="35%" cy="30%" r="75%"><stop offset="0%" stop-color="#c96060"/><stop offset="60%" stop-color="#7a2a2a"/><stop offset="100%" stop-color="#2a1010"/></radialGradient></defs>
+<rect width="100" height="100" fill="url(#umbraGrad)"/>
+<path d="M50 22 L70 40 L62 74 L38 74 L30 40 Z" fill="#1c0d0d" opacity="0.8"/>
+<circle cx="42" cy="46" r="3" fill="#f0b0b0"/><circle cx="58" cy="46" r="3" fill="#f0b0b0"/>`;
+
+/* =========================================================
+   BANCO DE PREGUNTAS
+   ========================================================= */
+const BANK = [
+  {subject:'Matemáticas', type:'fill', text:'Si el logaritmo decimal de x es 3, entonces x = ___', answer:'1000'},
+  {subject:'Matemáticas', type:'bool', text:'Todo número primo mayor que 2 es estrictamente impar.', answer:true},
+  {subject:'Matemáticas', type:'bool', text:'La suma de los ángulos internos de un triángulo es 180°.', answer:true},
+  {subject:'Física', type:'match', text:'¿Qué magnitud vectorial mide el cambio de velocidad en el tiempo?', options:['Aceleración','Velocidad','Masa','Fuerza'], answer:'Aceleración'},
+  {subject:'Física', type:'fill', text:'La tercera ley de Newton establece que a toda acción corresponde una ___ de igual magnitud y sentido opuesto.', answer:'reaccion'},
+  {subject:'Física', type:'fill', text:'La unidad de fuerza en el Sistema Internacional es el ___.', answer:'newton'},
+  {subject:'Química', type:'match', text:'¿Cómo se llama el enlace donde los átomos comparten electrones de forma equitativa?', options:['Covalente','Iónico','Metálico','Puente de hidrógeno'], answer:'Covalente'},
+  {subject:'Química', type:'bool', text:'El agua pura a 25°C registra un pH de 7.', answer:true},
+  {subject:'Química', type:'fill', text:'El símbolo químico del oro es ___.', answer:'au'},
+  {subject:'Historia Universal', type:'direct', text:'¿En qué año cayó Constantinopla?', answer:'1453'},
+  {subject:'Historia Universal', type:'bool', text:'La Revolución Rusa coincidió con la Segunda Guerra Mundial.', answer:false},
+  {subject:'Historia Universal', type:'direct', text:'¿En qué año comenzó la Primera Guerra Mundial?', answer:'1914'},
+  {subject:'Lengua y Literatura', type:'match', text:'¿Cómo se llama la figura retórica que consiste en exagerar deliberadamente?', options:['Hipérbole','Metáfora','Símil','Personificación'], answer:'Hipérbole'},
+  {subject:'Lengua y Literatura', type:'direct', text:'¿Quién escribió "La vida es sueño"?', answer:'calderon de la barca'},
+  {subject:'Lengua y Literatura', type:'bool', text:'La metáfora es una comparación explícita que usa la palabra "como".', answer:false},
+  {subject:'Geografía', type:'direct', text:'¿Cuál es el desierto cálido más extenso de la Tierra?', answer:'sahara'},
+  {subject:'Geografía', type:'bool', text:'El río Danubio desemboca en el Mar Negro.', answer:true},
+  {subject:'Geografía', type:'direct', text:'¿Cuál es el continente más pequeño?', answer:'oceania'},
+  {subject:'Biología', type:'match', text:'¿Qué orgánulo celular sintetiza el ATP?', options:['Mitocondria','Núcleo','Ribosoma','Lisosoma'], answer:'Mitocondria'},
+  {subject:'Biología', type:'bool', text:'Las células procariotas carecen de núcleo delimitado por membrana.', answer:true},
+  {subject:'Biología', type:'fill', text:'El proceso por el cual las plantas producen su alimento usando luz solar se llama ___.', answer:'fotosintesis'},
+  {subject:'Filosofía', type:'match', text:'¿Qué filósofo es autor del mito de la caverna?', options:['Platón','Aristóteles','Sócrates','Descartes'], answer:'Platón'},
+  {subject:'Filosofía', type:'direct', text:'¿Cómo se llama la corriente ética que busca la felicidad o utilidad colectiva?', answer:'utilitarismo'},
+  {subject:'Filosofía', type:'bool', text:'Sócrates escribió numerosos tratados filosóficos a lo largo de su vida.', answer:false},
+  {subject:'Historia del Arte', type:'bool', text:'Francisco de Goya pintó "Las Meninas".', answer:false},
+  {subject:'Historia del Arte', type:'match', text:'¿Qué vanguardia artística estaba obsesionada con la velocidad?', options:['Futurismo','Cubismo','Surrealismo','Impresionismo'], answer:'Futurismo'},
+  {subject:'Historia del Arte', type:'direct', text:'¿Quién pintó "La noche estrellada"?', answer:'van gogh'},
+  {subject:'Informática', type:'match', text:'¿Qué componente es el núcleo ejecutor de instrucciones de un ordenador?', options:['CPU','RAM','GPU','Disco duro'], answer:'CPU'},
+  {subject:'Informática', type:'bool', text:'El protocolo HTTPS se apoya en el cifrado TLS/SSL.', answer:true},
+  {subject:'Informática', type:'fill', text:'La memoria de acceso aleatorio se abrevia como ___.', answer:'ram'}
+];
+const TYPE_LABEL = {bool:'Juicio binario', fill:'Inserción de término', direct:'Deducción directa', match:'Conexión conceptual'};
+const OBJECTIVE_AT = [5,10,15];
+
+/* =========================================================
+   MAPA ANIMADO
+   ========================================================= */
+function buildMapSVG(){
+  return `
+  <defs>
+    <linearGradient id="jungleBlue" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#16351f"/><stop offset="100%" stop-color="#0e2216"/></linearGradient>
+    <linearGradient id="jungleRed" x1="0" y1="0" x2="1" y2="1"><stop offset="0%" stop-color="#3a1c1c"/><stop offset="100%" stop-color="#241111"/></linearGradient>
+    <clipPath id="riverClip"><path d="M25,205 Q140,175 200,200 T380,195 L380,215 Q200,220 140,195 T25,225 Z"/></clipPath>
+  </defs>
+  <rect x="0" y="0" width="400" height="400" fill="#0a0f1c"/>
+  <polygon points="70,330 20,330 20,20 330,20 330,70" fill="url(#jungleBlue)" opacity="0.5"/>
+  <polygon points="330,70 380,70 380,380 70,380 70,330" fill="url(#jungleRed)" opacity="0.5"/>
+
+  <path d="M70,330 L70,70 L330,70" fill="none" stroke="#2c3454" stroke-width="18" stroke-linecap="round"/>
+  <path d="M70,330 L330,330 L330,70" fill="none" stroke="#2c3454" stroke-width="18" stroke-linecap="round"/>
+  <path d="M70,330 L330,70" fill="none" stroke="#2c3454" stroke-width="18" stroke-linecap="round"/>
+
+  <path id="path-top" d="M70,330 L70,70 L330,70" fill="none" stroke="none"/>
+  <path id="path-bot" d="M70,330 L330,330 L330,70" fill="none" stroke="none"/>
+  <path id="path-mid" d="M70,330 L330,70" fill="none" stroke="none"/>
+
+  <g clip-path="url(#riverClip)">
+    <rect x="0" y="170" width="400" height="60" fill="#1c3a52"/>
+    <rect x="-40" y="170" width="60" height="60" fill="#2c5678" opacity="0.6" id="river-shimmer"/>
+  </g>
+
+  <circle r="3.2" fill="#4d8fd1"><animateMotion dur="7s" repeatCount="indefinite"><mpath href="#path-top"/></animateMotion></circle>
+  <circle r="3.2" fill="#d15050"><animateMotion dur="7s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#path-top"/></animateMotion></circle>
+  <circle r="3.2" fill="#4d8fd1"><animateMotion dur="7.5s" repeatCount="indefinite"><mpath href="#path-bot"/></animateMotion></circle>
+  <circle r="3.2" fill="#d15050"><animateMotion dur="7.5s" repeatCount="indefinite" keyPoints="1;0" keyTimes="0;1" calcMode="linear"><mpath href="#path-bot"/></animateMotion></circle>
+
+  <g id="jungle-camps" fill="#3a4468">
+    <circle cx="140" cy="230" r="5"/><circle cx="115" cy="180" r="5"/><circle cx="260" cy="170" r="5"/><circle cx="285" cy="220" r="5"/>
+  </g>
+
+  <g id="obj-guardian">
+    <circle cx="235" cy="150" r="11" fill="#264a3a" stroke="#5f8f6a" stroke-width="2" style="animation:pulseOpac 2s ease-in-out infinite;"/>
+    <text x="235" y="134" text-anchor="middle" font-size="8" fill="#5f8f6a" font-family="Cinzel,serif">GUARDIÁN</text>
+  </g>
+  <g id="obj-coloso">
+    <circle cx="150" cy="255" r="13" fill="#3a2a4a" stroke="#8177b8" stroke-width="2" style="animation:pulseOpac 2.4s ease-in-out infinite;"/>
+    <text x="150" y="278" text-anchor="middle" font-size="8" fill="#8177b8" font-family="Cinzel,serif">COLOSO</text>
+  </g>
+
+  <g><rect x="45" y="315" width="40" height="40" rx="6" fill="#1c3654" stroke="#4d8fd1" stroke-width="2"/><text x="65" y="339" text-anchor="middle" font-size="7" fill="#bcd8f5" font-family="Cinzel,serif">NÚCLEO</text></g>
+  <g><rect x="315" y="45" width="40" height="40" rx="6" fill="#4a1c1c" stroke="#d15050" stroke-width="2"/><text x="335" y="69" text-anchor="middle" font-size="7" fill="#f5bcbc" font-family="Cinzel,serif">NÚCLEO</text></g>
+
+  <g id="ally-markers"></g>
+  <g id="enemy-markers"></g>
+  `;
+}
+
+/* =========================================================
+   UTILIDADES
+   ========================================================= */
+let state = {};
+function normalize(s){ return s.toString().trim().toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g,''); }
+function shuffle(arr){ const a=arr.slice(); for(let i=a.length-1;i>0;i--){ const j=Math.floor(Math.random()*(i+1)); [a[i],a[j]]=[a[j],a[i]]; } return a; }
+function laneKeyForRole(role){ if(role==='TOP') return 'path-top'; if(role==='TIRADOR'||role==='SOPORTE') return 'path-bot'; return 'path-mid'; }
+function randCode(){ const chars='ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; let s=''; for(let i=0;i<5;i++) s+=chars[Math.floor(Math.random()*chars.length)]; return s; }
+function byId(id){ return AVATARS.find(a=>a.id===id); }
+
+/* =========================================================
+   PANTALLA INICIO
+   ========================================================= */
+function showScreen(id){ document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active')); document.getElementById(id).classList.add('active'); }
+
+document.getElementById('mode-solo').addEventListener('click', ()=>{
+  state = { mode:'solo' };
+  document.getElementById('avatar-title').textContent = 'Elige tu campeón';
+  buildAvatarGrid(null);
+  showScreen('screen-avatars');
+});
+document.getElementById('mode-mp').addEventListener('click', ()=>{ showScreen('screen-mp-menu'); });
+
+/* =========================================================
+   MULTIJUGADOR: almacenamiento compartido por código
+   ========================================================= */
+function myClientId(){ if(!state.myId) state.myId = 'p_'+Math.random().toString(36).slice(2,10); return state.myId; }
+
+async function getLobby(code){
+  try{ const res = await window.storage.get('lobby:'+code, true); return res ? JSON.parse(res.value) : null; }
+  catch(e){ return null; }
+}
+async function setLobby(code, obj){
+  obj.updatedAt = Date.now();
+  try{ await window.storage.set('lobby:'+code, JSON.stringify(obj), true); return true; }
+  catch(e){ return false; }
+}
+
+document.getElementById('mp-create-btn').addEventListener('click', async ()=>{
+  const code = randCode();
+  state = { mode:'mp', role:'host', lobbyCode:code };
+  myClientId();
+  document.getElementById('avatar-title').textContent = 'Elige tu campeón (anfitrión)';
+  buildAvatarGrid([], (av)=> createLobbyAndGo(code, av));
+  showScreen('screen-avatars');
+});
+
+document.getElementById('mp-join-btn').addEventListener('click', async ()=>{
+  const codeInput = document.getElementById('mp-join-input').value.trim().toUpperCase();
+  const errEl = document.getElementById('mp-menu-error');
+  errEl.textContent = '\u00A0';
+  if(codeInput.length<4){ errEl.textContent='Introduce un código válido.'; return; }
+  const lobby = await getLobby(codeInput);
+  if(!lobby){ errEl.textContent='No se encontró ninguna sala con ese código.'; return; }
+  if(lobby.started){ errEl.textContent='Esa partida ya ha comenzado.'; return; }
+  if(lobby.players.length>=5){ errEl.textContent='La sala ya tiene 5 jugadores.'; return; }
+  state = { mode:'mp', role:'guest', lobbyCode:codeInput };
+  myClientId();
+  const takenIds = lobby.players.map(p=>p.avatarId);
+  document.getElementById('avatar-title').textContent = 'Elige tu campeón';
+  buildAvatarGrid(takenIds, (av)=> joinLobbyAndGo(codeInput, av));
+  showScreen('screen-avatars');
+});
+
+async function createLobbyAndGo(code, av){
+  const lobby = {
+    code, hostId: state.myId, started:false,
+    players:[{ id: state.myId, name:'Anfitrión', avatarId: av.id }]
+  };
+  await setLobby(code, lobby);
+  state.lobby = lobby; state.avatar = av;
+  enterLobbyScreen();
+}
+async function joinLobbyAndGo(code, av){
+  const lobby = await getLobby(code);
+  if(!lobby || lobby.started || lobby.players.some(p=>p.avatarId===av.id)){
+    document.getElementById('avatar-title').textContent = 'Ese campeón ya no está disponible, elige otro';
+    const takenIds = lobby ? lobby.players.map(p=>p.avatarId) : [];
+    buildAvatarGrid(takenIds, (av2)=> joinLobbyAndGo(code, av2));
+    return;
+  }
+  lobby.players.push({ id: state.myId, name:'Aliado '+lobby.players.length, avatarId: av.id });
+  await setLobby(code, lobby);
+  state.lobby = lobby; state.avatar = av;
+  enterLobbyScreen();
+}
+
+function enterLobbyScreen(){
+  document.getElementById('lobby-code-display').textContent = state.lobbyCode;
+  renderLobbyPlayers();
+  document.getElementById('lobby-start-btn').style.display = (state.role==='host') ? 'block' : 'none';
+  showScreen('screen-lobby');
+  startLobbyPolling();
+}
+function renderLobbyPlayers(){
+  const wrap = document.getElementById('lobby-players');
+  wrap.innerHTML = '';
+  state.lobby.players.forEach(p=>{
+    const av = byId(p.avatarId);
+    const row = document.createElement('div');
+    row.className = 'lobby-player-row';
+    row.innerHTML = `<span class="mini-portrait">${wrap_(av.icon)}</span><span class="pname">${p.name}${p.id===state.myId?' (tú)':''}</span><span class="prole">${av.role} · ${av.name}</span>`;
+    wrap.appendChild(row);
+  });
+  document.getElementById('lobby-status').textContent = state.lobby.players.length<2
+    ? 'Esperando a que se unan más jugadores… (mínimo recomendado: 2)'
+    : `${state.lobby.players.length} jugadores conectados.`;
+}
+function wrap_(inner){ return wrap(inner,'0 0 100 100'); }
+
+let lobbyPollHandle=null;
+function startLobbyPolling(){
+  clearInterval(lobbyPollHandle);
+  lobbyPollHandle = setInterval(async ()=>{
+    const fresh = await getLobby(state.lobbyCode);
+    if(!fresh) return;
+    state.lobby = fresh;
+    if(document.getElementById('screen-lobby').classList.contains('active')) renderLobbyPlayers();
+    if(fresh.started && !state.mpGameStarted){
+      state.mpGameStarted = true;
+      clearInterval(lobbyPollHandle);
+      enterMultiplayerGame();
+    }
+    if(state.mpGameStarted && document.getElementById('screen-game').classList.contains('active')){
+      applyRemoteMatchState(fresh.match);
+    }
+  }, 1500);
+}
+
+document.getElementById('lobby-start-btn').addEventListener('click', async ()=>{
+  const lobby = await getLobby(state.lobbyCode) || state.lobby;
+  const questionOrder = shuffle(BANK.map((_,i)=>i)).slice(0,20);
+  lobby.started = true;
+  lobby.match = {
+    questionOrder, qIndex:0, blueHP:100, redHP:100, correctCount:0, answeredCount:0,
+    objectivesTriggered:[], buff:{remaining:0, mult:1, label:''}, turnOrder: lobby.players.map(p=>p.id),
+    turnIndex:0, consecutiveMiss:0, consecutiveCorrect:0, finished:false, winner:null, log:'La partida ha comenzado.'
+  };
+  await setLobby(state.lobbyCode, lobby);
+  state.lobby = lobby; state.mpGameStarted = true;
+  clearInterval(lobbyPollHandle);
+  enterMultiplayerGame();
+});
+
+/* =========================================================
+   SELECCIÓN DE CAMPEÓN (compartida solo / mp)
+   ========================================================= */
+function buildAvatarGrid(takenIds, onPick){
+  const grid = document.getElementById('avatar-grid');
+  grid.innerHTML = '';
+  AVATARS.forEach(av=>{
+    const isTaken = takenIds && takenIds.includes(av.id);
+    const card = document.createElement('div');
+    card.className = 'avatar-card' + (isTaken?' disabled':'');
+    card.style.setProperty('--card-accent', av.accent);
+    card.innerHTML = `
+      <div class="body-portrait">${wrap(av.body,'0 0 120 190')}</div>
+      <div class="role-tag">${av.role}</div>
+      <h3>${av.name}</h3>
+      <p class="title">${av.title}</p>
+      <p class="passive">${av.passive}</p>
+    `;
+    if(!isTaken){
+      card.addEventListener('click', ()=>{
+        if(onPick) onPick(av); else goToLineup(av);
+      });
+    }
+    grid.appendChild(card);
+  });
+}
+
+/* =========================================================
+   LINEUP SOLO
+   ========================================================= */
+function goToLineup(playerAvatar){
+  state.avatar = playerAvatar;
+  state.teammates = AVATARS.filter(a=>a.id!==playerAvatar.id && a.role!==playerAvatar.role)
+    .filter((a,i,arr)=> arr.findIndex(x=>x.role===a.role)===i); // un compañero por rol restante
+  // asegurar exactamente 4 compañeros de roles distintos al del jugador
+  const neededRoles = ROLE_ORDER.filter(r=>r!==playerAvatar.role);
+  state.teammates = neededRoles.map(role=> shuffle(AVATARS.filter(a=>a.role===role))[0]);
+
+  const blueWrap = document.getElementById('blue-roster'); blueWrap.innerHTML='';
+  const orderedTeam = [playerAvatar, ...state.teammates].sort((a,b)=> ROLE_ORDER.indexOf(a.role)-ROLE_ORDER.indexOf(b.role));
+  orderedTeam.forEach(av=>{
+    const row = document.createElement('div'); row.className = 'roster-row' + (av.id===playerAvatar.id ? ' you' : '');
+    row.innerHTML = `<span class="mini-portrait">${wrap_(av.icon)}</span><div class="rinfo"><div class="rname">${av.name}${av.id===playerAvatar.id?' (tú)':''}</div><div class="rrole">${av.role}</div></div>`;
+    blueWrap.appendChild(row);
+  });
+  const redWrap = document.getElementById('red-roster'); redWrap.innerHTML='';
+  ROLE_ORDER.forEach(role=>{
+    const row = document.createElement('div'); row.className='roster-row';
+    row.innerHTML = `<span class="enemy-sigil"></span><div class="rinfo"><div class="rname">Rival de Umbra</div><div class="rrole">${role}</div></div>`;
+    redWrap.appendChild(row);
+  });
+  showScreen('screen-lineup');
+}
+document.getElementById('begin-btn').addEventListener('click', ()=> startSoloGame(state.avatar));
+
+/* =========================================================
+   MOTOR DE PARTIDA — compartido
+   ========================================================= */
+const BASE_CORRECT_DMG = 10, BASE_WRONG_DMG = 8;
+
+function coreApplyCorrect(ctx, av, responseTimeSec, qType){
+  let dmg = BASE_CORRECT_DMG, heal = 0, msg = null;
+  ctx.consecutiveCorrect = (ctx.consecutiveCorrect||0)+1;
+  ctx.consecutiveMiss = 0;
+
+  if(av.id==='ignis' && ctx.consecutiveCorrect%3===0){
+    if(ctx.hasClock){ ctx.timeLeft = Math.min(ctx.baseTime, ctx.timeLeft+7); msg='\u2726 Combustión Mental: +7s incinerados.'; }
+    else { dmg += 6; msg='\u2726 Combustión Mental: golpe incinerado extra.'; }
+  }
+  if(av.id==='sylva' && (qType==='fill'||qType==='direct') && ctx.blueHP<45){
+    if(ctx.hasClock){ ctx.timeLeft = Math.min(ctx.baseTime, ctx.timeLeft+6); msg='\u2726 Fotosíntesis: +6s regenerados.'; }
+    else { heal += 6; msg='\u2726 Fotosíntesis: tu núcleo se regenera.'; }
+  }
+  if(av.id==='vespera' && responseTimeSec<2){ dmg = Math.round(dmg*1.6); msg='\u2726 Pacto Umbrío: golpe potenciado.'; }
+  if(av.id==='nyxira' && ctx.lastWasMiss){ dmg *= 2; msg='\u2726 Emboscada: ¡daño doblado!'; }
+  if(av.id==='zephyrion' && qType==='match'){ dmg += 4; msg = msg || '\u2726 Corriente Ascendente: daño reforzado.'; }
+  if(av.id==='kaelith'){ ctx.kaelithStreak = (ctx.kaelithStreak||0)+1; if(ctx.kaelithStreak>=3){ dmg = Math.round(dmg*1.8); ctx.kaelithStreak=0; msg='\u2726 Tiro Certero: ¡golpe crítico!'; } }
+  if(av.id==='mossgrave'){ heal += 3; }
+
+  if(ctx.buff && ctx.buff.remaining>0){ dmg = Math.round(dmg*ctx.buff.mult); ctx.buff.remaining--; if(ctx.buff.remaining===0) ctx.buff.label=''; }
+
+  ctx.lastWasMiss = false;
+  return { dmg, heal, msg };
+}
+function coreApplyWrong(ctx, av){
+  let dmg = BASE_WRONG_DMG, msg = null;
+  ctx.consecutiveCorrect = 0; ctx.kaelithStreak = 0;
+  if(av.id==='khorvath'){ if(ctx.hasClock){ /* manejado aparte en el reloj */ } else { dmg = Math.round(dmg*0.55); } msg='Distorsión Temporal amortigua el golpe.'; }
+  if(av.id==='ferrovox'){ dmg = Math.round(dmg*0.65); msg = msg || 'Blindaje Templado absorbe parte del daño.'; }
+  if(av.id==='vespera' && ctx.blueHP<45){ dmg = Math.round(dmg*2); msg='\u2716 Pacto Umbrío: castigo duplicado en el abismo.'; }
+  ctx.lastWasMiss = true;
+  return { dmg, msg };
+}
+function wrongClockFactor(av){ return av.id==='khorvath' ? 1.08 : 1.22; }
+
+/* =========================================================
+   MODO SOLO
+   ========================================================= */
+function startSoloGame(avatar){
+  state = { ...state, avatar,
+    questions: shuffle(BANK).slice(0,20), index:0, correctCount:0, answeredCount:0,
+    timeLeft:100, baseTime:100, hasClock:true, rateMultiplier:1, freezeRemaining:0,
+    consecutiveCorrect:0, consecutiveMiss:0, lastWasMiss:false, kaelithStreak:0,
+    qStart:0, lastTick:performance.now(), running:true, results:[], blueHP:100, redHP:100,
+    objectivesTriggered:[], buff:{remaining:0, mult:1, label:''}
+  };
+  setupGameScreenCommon();
+  loadQuestion();
+  requestAnimationFrame(soloTick);
+}
+
+function setupGameScreenCommon(){
+  document.getElementById('hud-portrait').innerHTML = wrap(state.avatar.icon,'0 0 100 100');
+  document.getElementById('hud-name').textContent = state.avatar.name + ' · ' + state.avatar.role;
+  document.getElementById('lane-role-label').textContent =
+    state.avatar.role==='TOP' ? 'LÍNEA SUPERIOR' : state.avatar.role==='MEDIA' ? 'LÍNEA MEDIA' :
+    state.avatar.role==='JUNGLA' ? 'JUNGLA — RONDANDO EL RÍO' : 'LÍNEA INFERIOR';
+  document.getElementById('map-svg').innerHTML = buildMapSVG();
+  document.getElementById('turn-strip').style.display = state.mode==='mp' ? 'flex' : 'none';
+  placeTeamMarkers();
+  buildProgressDots();
+  updateNexusBars();
+  updateBuffBanner();
+  showScreen('screen-game');
+}
+
+function updateBuffBanner(){
+  const el = document.getElementById('buff-banner');
+  if(state.buff && state.buff.remaining>0){ el.textContent = `⚡ ${state.buff.label} activa — ${state.buff.remaining} golpes reforzados restantes`; }
+  else el.textContent = '\u00A0';
+}
+
+function pointOnPath(pathId, pct){ const path = document.getElementById(pathId); const len = path.getTotalLength(); return path.getPointAtLength(len*pct); }
+
+function placeTeamMarkers(){
+  const allyG = document.getElementById('ally-markers'); const enemyG = document.getElementById('enemy-markers');
+  allyG.innerHTML=''; enemyG.innerHTML='';
+  const allyList = state.mode==='mp' ? state.lobby.players.map(p=>byId(p.avatarId)) : [state.avatar, ...state.teammates];
+  allyList.forEach(av=>{
+    const key = laneKeyForRole(av.role); const p = pointOnPath(key, 0.08);
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('id','marker-'+av.id); g.style.animation='bob 2.4s ease-in-out infinite';
+    const isMe = av.id===state.avatar.id;
+    const s = isMe?24:18;
+    g.innerHTML = `<circle cx="${p.x}" cy="${p.y}" r="${s/2+3}" fill="#0a0f1c" stroke="${av.accent}" stroke-width="2"/><svg x="${p.x-s/2}" y="${p.y-s/2}" width="${s}" height="${s}" viewBox="0 0 100 100">${av.icon}</svg>`;
+    allyG.appendChild(g);
+  });
+  ROLE_ORDER.forEach(role=>{
+    const key = laneKeyForRole(role); const p = pointOnPath(key, 0.92);
+    const isMine = role===state.avatar.role;
+    const s = isMine?24:18;
+    const g = document.createElementNS('http://www.w3.org/2000/svg','g');
+    g.setAttribute('id','enemy-'+role); g.style.animation='bob 2.6s ease-in-out infinite';
+    g.innerHTML = `<circle cx="${p.x}" cy="${p.y}" r="${s/2+3}" fill="#0a0f1c" stroke="#d15050" stroke-width="2"/><svg x="${p.x-s/2}" y="${p.y-s/2}" width="${s}" height="${s}" viewBox="0 0 100 100">${UMBRA_CREST}</svg>`;
+    enemyG.appendChild(g);
+  });
+}
+function movePlayerMarker(){
+  const key = laneKeyForRole(state.avatar.role);
+  const pct = Math.min(0.92, 0.08 + (state.laneStrength/100)*0.84);
+  const p = pointOnPath(key, pct);
+  const m = document.getElementById('marker-'+state.avatar.id);
+  if(m){ const c=m.querySelector('circle'), s=m.querySelector('svg'); const sz=parseFloat(s.getAttribute('width'));
+    c.setAttribute('cx',p.x); c.setAttribute('cy',p.y); s.setAttribute('x',p.x-sz/2); s.setAttribute('y',p.y-sz/2); }
+  const enemyPct = Math.min(0.92, 0.08 + ((100-state.laneStrength)/100)*0.84);
+  const ep = pointOnPath(key, enemyPct);
+  const em = document.getElementById('enemy-'+state.avatar.role);
+  if(em){ const c=em.querySelector('circle'), s=em.querySelector('svg'); const sz=parseFloat(s.getAttribute('width'));
+    c.setAttribute('cx',ep.x); c.setAttribute('cy',ep.y); s.setAttribute('x',ep.x-sz/2); s.setAttribute('y',ep.y-sz/2); }
+}
+
+function buildProgressDots(){ const wrapEl=document.getElementById('progress-dots'); wrapEl.innerHTML=''; for(let i=0;i<20;i++){ const d=document.createElement('span'); d.id='dot-'+i; wrapEl.appendChild(d);} state.laneStrength=50; }
+function refreshDots(){ for(let i=0;i<20;i++){ const d=document.getElementById('dot-'+i); d.className=''; if(state.results[i]==='hit')d.classList.add('hit'); else if(state.results[i]==='miss')d.classList.add('miss'); if(i===state.index)d.classList.add('now'); } }
+function updateNexusBars(){
+  document.getElementById('blue-hp-fill').style.width = Math.max(0,state.blueHP)+'%';
+  document.getElementById('red-hp-fill').style.width = Math.max(0,state.redHP)+'%';
+  document.getElementById('blue-hp-num').textContent = Math.max(0,Math.round(state.blueHP));
+  document.getElementById('red-hp-num').textContent = Math.max(0,Math.round(state.redHP));
+}
+
+function loadQuestion(){
+  const q = state.questions[state.index];
+  document.getElementById('hud-qcount').textContent = `Pregunta ${state.index+1}/20`;
+  document.getElementById('subject-label').textContent = q.subject.toUpperCase();
+  document.getElementById('qtype-label').textContent = TYPE_LABEL[q.type];
+  const card = document.getElementById('question-card'); card.classList.remove('shake','objective'); void card.offsetWidth;
+  document.getElementById('qtext').innerHTML = q.type==='fill' ? q.text.replace('___','<span class="blank"></span>') : q.text;
+  document.getElementById('feedback-line').textContent='\u00A0'; document.getElementById('feedback-line').className='feedback-line';
+  refreshDots();
+  renderAnswerArea(q, (ok, triggerEl, area)=> submitAnswerSolo(ok, triggerEl, area));
+  state.qStart = performance.now();
+}
+
+function renderAnswerArea(q, onSubmit){
+  const area = document.getElementById('answers-area'); area.innerHTML='';
+  if(q.type==='bool'){
+    const grid=document.createElement('div'); grid.className='bool-grid';
+    ['Verdadero','Falso'].forEach(label=>{ const btn=document.createElement('button'); btn.className='opt-btn'; btn.textContent=label;
+      btn.addEventListener('click', ()=> onSubmit(label==='Verdadero'? q.answer===true : q.answer===false, btn, area)); grid.appendChild(btn); });
+    area.appendChild(grid);
+  } else if(q.type==='match'){
+    let opts = q.options.slice();
+    const activeAv = getActiveAvatar();
+    if(activeAv && activeAv.id==='aethelgard'){
+      const correct=q.answer; const wrongs=shuffle(opts.filter(o=>o!==correct)); const keep=wrongs.slice(0,Math.max(1,Math.ceil(wrongs.length/2)));
+      opts = shuffle([correct, ...keep]);
+    } else opts = shuffle(opts);
+    const grid=document.createElement('div'); grid.className='opt-grid';
+    opts.forEach(label=>{ const btn=document.createElement('button'); btn.className='opt-btn'; btn.textContent=label;
+      btn.addEventListener('click', ()=> onSubmit(label===q.answer, btn, area)); grid.appendChild(btn); });
+    area.appendChild(grid);
+  } else {
+    const w=document.createElement('div'); w.className='text-answer';
+    const input=document.createElement('input'); input.type='text'; input.placeholder = q.type==='fill'?'Completa el término...':'Escribe tu respuesta...'; input.autocomplete='off';
+    const btn=document.createElement('button'); btn.textContent='Responder';
+    const doSubmit=()=>{ const val=normalize(input.value||''); onSubmit(val.length>0 && val===normalize(q.answer), btn, area); };
+    btn.addEventListener('click', doSubmit); input.addEventListener('keydown', e=>{ if(e.key==='Enter') doSubmit(); });
+    w.appendChild(input); w.appendChild(btn); area.appendChild(w); setTimeout(()=>input.focus(),50);
+  }
+}
+function getActiveAvatar(){ return state.avatar; }
+
+function spawnParticles(good){
+  const layer=document.getElementById('particle-layer'); layer.innerHTML='';
+  const color = good?'var(--verdant)':'var(--danger)';
+  for(let i=0;i<10;i++){ const p=document.createElement('div'); p.className='particle';
+    const angle=(Math.PI*2*i)/10, dist=60+Math.random()*30;
+    p.style.setProperty('--bx',(Math.cos(angle)*dist)+'px'); p.style.setProperty('--by',(Math.sin(angle)*dist)+'px'); p.style.background=color;
+    layer.appendChild(p); }
+  setTimeout(()=>{ layer.innerHTML=''; },750);
+}
+function showBuff(text){ const el=document.getElementById('buff-flag'); el.textContent=text; clearTimeout(showBuff._t); showBuff._t=setTimeout(()=>{ el.textContent='\u00A0'; },1700); }
+function flashAnswerVisual(area, triggerEl, q){
+  if(area.querySelector('.opt-btn')){
+    area.querySelectorAll('.opt-btn').forEach(b=>{ const label=b.textContent; const correctLabel = q.type==='bool' ? (q.answer?'Verdadero':'Falso') : q.answer;
+      if(label===correctLabel) b.classList.add('correct'); else if(b===triggerEl) b.classList.add('wrong'); });
+  }
+}
+
+/* ---- SOLO: enviar respuesta ---- */
+function submitAnswerSolo(isCorrect, triggerEl, area){
+  area.querySelectorAll('button, input').forEach(el=>el.disabled=true);
+  const responseTimeSec = (performance.now()-state.qStart)/1000;
+  const q = state.questions[state.index];
+  const fb=document.getElementById('feedback-line'), card=document.getElementById('question-card'), flash=document.getElementById('flash-overlay');
+  flashAnswerVisual(area, triggerEl, q);
+  state.answeredCount++; state.results[state.index]=isCorrect?'hit':'miss'; spawnParticles(isCorrect);
+
+  if(isCorrect){
+    const r = coreApplyCorrect(state, state.avatar, responseTimeSec, q.type);
+    state.correctCount++; state.redHP=Math.max(0,state.redHP-r.dmg); state.blueHP=Math.min(100,state.blueHP+r.heal);
+    state.laneStrength=Math.min(100,state.laneStrength+8);
+    state.freezeRemaining += (state.avatar.id==='vespera'&&responseTimeSec<2) ? 5 : 3;
+    fb.textContent='\u2713 Correcto — tu línea avanza y el núcleo rival se resquebraja.'; fb.className='feedback-line good'; flash.className='flash-overlay good';
+    if(r.msg) showBuff('\u2726 '+r.msg.replace('\u2726 ',''));
+  } else {
+    const r = coreApplyWrong(state, state.avatar);
+    state.blueHP=Math.max(0,state.blueHP-r.dmg); state.laneStrength=Math.max(0,state.laneStrength-6);
+    state.rateMultiplier *= wrongClockFactor(state.avatar);
+    fb.textContent=`\u2717 Incorrecto — la respuesta era "${q.type==='bool'?(q.answer?'Verdadero':'Falso'):q.answer}".`; fb.className='feedback-line bad'; flash.className='flash-overlay bad';
+    card.classList.add('shake');
+    if(r.msg) showBuff(r.msg);
+  }
+  updateNexusBars(); updateBuffBanner(); movePlayerMarker(); refreshDots();
+
+  if(state.blueHP<=0){ setTimeout(()=>endGameSolo(false,'nexus'),700); return; }
+  if(state.redHP<=0){ setTimeout(()=>endGameSolo(true,'nexus'),700); return; }
+
+  setTimeout(()=>{
+    state.index++;
+    if(OBJECTIVE_AT.includes(state.answeredCount) && !state.objectivesTriggered.includes(state.answeredCount)){
+      state.objectivesTriggered.push(state.answeredCount); triggerObjectiveSolo(); return;
+    }
+    proceedOrEndSolo();
+  }, 900);
+}
+function proceedOrEndSolo(){
+  if(state.index>=20 || state.timeLeft<=0){ endGameSolo(state.redHP>state.blueHP,'timeup'); } else { loadQuestion(); }
+}
+
+function triggerObjectiveSolo(){
+  state.running=false;
+  const overlay=document.getElementById('gather-overlay'), ring=document.getElementById('gather-ring'), title=document.getElementById('gather-title'), sub=document.getElementById('gather-sub');
+  ring.querySelectorAll('.ally-dot').forEach(d=>d.remove());
+  const isGuardian = Math.random()<0.5;
+  title.textContent = isGuardian ? '¡El Guardián de Cristal ha despertado en el río!' : '¡El Coloso del Vacío emerge junto al río!';
+  sub.textContent='Vuestro equipo debe reunirse antes de reclamarlo…';
+  overlay.classList.add('active');
+  const allTeam=[state.avatar, ...state.teammates];
+  allTeam.forEach((av,i)=>{
+    const dot=document.createElement('div'); dot.className='ally-dot'; dot.innerHTML=wrap_(av.icon);
+    const angle=Math.random()*Math.PI*2, dist=95;
+    dot.style.left=(110+Math.cos(angle)*dist)+'px'; dot.style.top=(110+Math.sin(angle)*dist)+'px'; ring.appendChild(dot);
+    setTimeout(()=>{ const ta=(Math.PI*2*i)/allTeam.length; dot.style.left=(110+Math.cos(ta)*34-13)+'px'; dot.style.top=(110+Math.sin(ta)*34-13)+'px'; },120);
+  });
+  setTimeout(()=>{ sub.textContent='¡Los cinco aliados están reunidos! Responde para asegurar el objetivo.'; },1300);
+  setTimeout(()=>{ overlay.classList.remove('active'); state.running=true; state.lastTick=performance.now(); requestAnimationFrame(soloTick); loadObjectiveQuestionSolo(isGuardian); },2200);
+}
+function loadObjectiveQuestionSolo(isGuardian){
+  const used = state.questions.slice(0,state.index);
+  const pool = BANK.filter(q=>!used.includes(q));
+  const q = pool.length ? shuffle(pool)[0] : shuffle(BANK)[0];
+  state.questions[state.index]=q;
+  document.getElementById('hud-qcount').textContent=`Objetivo de equipo · Pregunta ${state.index+1}/20`;
+  document.getElementById('subject-label').textContent=(isGuardian?'GUARDIÁN DE CRISTAL · ':'COLOSO DEL VACÍO · ')+q.subject.toUpperCase();
+  document.getElementById('qtype-label').textContent=TYPE_LABEL[q.type];
+  const card=document.getElementById('question-card'); card.classList.add('objective');
+  document.getElementById('qtext').innerHTML = q.type==='fill' ? q.text.replace('___','<span class="blank"></span>') : q.text;
+  document.getElementById('feedback-line').textContent='\u00A0'; refreshDots();
+  renderAnswerArea(q, (isCorrectResolved, triggerEl, area)=>{
+    area.querySelectorAll('button,input').forEach(el=>el.disabled=true);
+    state.answeredCount++; state.results[state.index]=isCorrectResolved?'hit':'miss'; spawnParticles(isCorrectResolved);
+    const fb=document.getElementById('feedback-line'), flash=document.getElementById('flash-overlay');
+    if(isCorrectResolved){
+      state.correctCount++; state.redHP=Math.max(0,state.redHP-22);
+      state.buff = {remaining:5, mult:1.5, label:(isGuardian?'Bendición del Guardián':'Poder del Coloso')};
+      fb.textContent=(isGuardian?'¡Guardián de Cristal asegurado! ':'¡Coloso del Vacío derrotado! ')+'Vuestro equipo obtiene una bendición: golpes reforzados.';
+      fb.className='feedback-line good'; flash.className='flash-overlay good';
+    } else {
+      state.blueHP=Math.max(0,state.blueHP-15);
+      fb.textContent='La Academia Umbra reclama el objetivo. Vuestro núcleo sufre el contragolpe.'; fb.className='feedback-line bad'; flash.className='flash-overlay bad';
+      card.classList.add('shake');
+    }
+    updateNexusBars(); updateBuffBanner(); refreshDots();
+    if(state.blueHP<=0){ setTimeout(()=>endGameSolo(false,'nexus'),700); return; }
+    if(state.redHP<=0){ setTimeout(()=>endGameSolo(true,'nexus'),700); return; }
+    setTimeout(()=>{ state.index++; proceedOrEndSolo(); },1000);
+  });
+  state.qStart=performance.now();
+}
+
+function soloTick(now){
+  if(!state.running) return;
+  const dt=(now-state.lastTick)/1000; state.lastTick=now;
+  if(state.freezeRemaining>0){ state.freezeRemaining=Math.max(0,state.freezeRemaining-dt); } else { state.timeLeft -= dt*state.rateMultiplier; }
+  if(state.timeLeft<=0){ state.timeLeft=0; renderClock(); endGameSolo(state.redHP>state.blueHP,'timeup'); return; }
+  renderClock(); requestAnimationFrame(soloTick);
+}
+function renderClock(){
+  const pct=Math.max(0,state.timeLeft/state.baseTime); const r=25, circumference=2*Math.PI*r;
+  const ring=document.getElementById('timer-ring'); ring.setAttribute('stroke-dasharray',circumference); ring.setAttribute('stroke-dashoffset',circumference*(1-pct));
+  let color='#c9a15c'; if(pct<0.5) color='#d9a13b'; if(pct<0.25) color='#c24444'; ring.style.stroke=color;
+  document.getElementById('timer-num').textContent=Math.ceil(state.timeLeft);
+  document.getElementById('timer-mini').style.animation = pct<0.25 ? 'pulseCritical 1s ease-in-out infinite' : 'none';
+}
+function endGameSolo(won, reason){
+  state.running=false;
+  finishScreen(won, reason, state.avatar, state.correctCount, state.answeredCount, state.blueHP, state.redHP);
+}
+
+/* =========================================================
+   MODO MULTIJUGADOR — sincronizado por sondeo
+   ========================================================= */
+function enterMultiplayerGame(){
+  state.avatar = byId(state.lobby.players.find(p=>p.id===state.myId).avatarId);
+  state.teammates = state.lobby.players.filter(p=>p.id!==state.myId).map(p=>byId(p.avatarId));
+  state.hasClock = false; state.buff = state.lobby.match.buff; state.blueHP=state.lobby.match.blueHP; state.redHP=state.lobby.match.redHP;
+  state.correctCount=state.lobby.match.correctCount; state.answeredCount=state.lobby.match.answeredCount; state.results=[];
+  setupGameScreenCommon();
+  startLobbyPolling();
+  renderTurnStrip();
+  refreshMultiplayerTurn();
+}
+function renderTurnStrip(){
+  const strip=document.getElementById('turn-strip'); strip.innerHTML='';
+  state.lobby.players.forEach(p=>{
+    const av=byId(p.avatarId);
+    const chip=document.createElement('div'); chip.className='turn-chip'; chip.id='chip-'+p.id;
+    chip.innerHTML = `<span class="tc-portrait">${wrap_(av.icon)}</span><span>${p.name}</span>`;
+    strip.appendChild(chip);
+  });
+}
+function updateTurnHighlight(){
+  const match = state.lobby.match;
+  const activeId = match.turnOrder[match.turnIndex % match.turnOrder.length];
+  state.lobby.players.forEach(p=>{ const chip=document.getElementById('chip-'+p.id); if(chip) chip.classList.toggle('active', p.id===activeId); });
+  return activeId;
+}
+function applyRemoteMatchState(match){
+  if(!match) return;
+  state.blueHP=match.blueHP; state.redHP=match.redHP; state.correctCount=match.correctCount; state.answeredCount=match.answeredCount;
+  state.buff = match.buff; updateNexusBars(); updateBuffBanner();
+  const activeId = updateTurnHighlight();
+  if(match.finished){
+    endGameMultiplayer(match); return;
+  }
+  if(activeId===state.myId && !state.myTurnActive){ state.myTurnActive=true; beginMyTurn(); }
+  if(activeId!==state.myId && state.myTurnActive){ state.myTurnActive=false; }
+  if(activeId!==state.myId){ renderSpectatorView(match); }
+}
+function refreshMultiplayerTurn(){ applyRemoteMatchState(state.lobby.match); }
+
+let turnCountdownHandle=null;
+function beginMyTurn(){
+  const match = state.lobby.match;
+  const q = BANK[match.questionOrder[match.qIndex]];
+  document.getElementById('hud-portrait').innerHTML = wrap(state.avatar.icon,'0 0 100 100');
+  document.getElementById('hud-name').textContent = state.avatar.name+' · '+state.avatar.role;
+  document.getElementById('hud-qcount').textContent = `Tu turno · Pregunta ${match.qIndex+1}/20`;
+  document.getElementById('subject-label').textContent = q.subject.toUpperCase();
+  document.getElementById('qtype-label').textContent = TYPE_LABEL[q.type];
+  const isObjective = OBJECTIVE_AT.includes(match.answeredCount+1) && !match.objectivesTriggered.includes(match.answeredCount+1);
+  const card=document.getElementById('question-card'); card.classList.remove('shake','objective'); void card.offsetWidth;
+  if(isObjective) card.classList.add('objective');
+  document.getElementById('qtext').innerHTML = q.type==='fill' ? q.text.replace('___','<span class="blank"></span>') : q.text;
+  document.getElementById('feedback-line').textContent='\u00A0';
+
+  let timeLeftTurn = 20;
+  document.getElementById('timer-num').textContent = timeLeftTurn;
+  renderClockStatic(timeLeftTurn/20);
+  clearInterval(turnCountdownHandle);
+  turnCountdownHandle = setInterval(()=>{
+    timeLeftTurn--; document.getElementById('timer-num').textContent = Math.max(0,timeLeftTurn); renderClockStatic(Math.max(0,timeLeftTurn)/20);
+    if(timeLeftTurn<=0){ clearInterval(turnCountdownHandle); if(state.myTurnActive) submitAnswerMultiplayer(false, null, document.getElementById('answers-area'), q, isObjective); }
+  }, 1000);
+
+  renderAnswerArea(q, (ok, triggerEl, area)=>{ clearInterval(turnCountdownHandle); submitAnswerMultiplayer(ok, triggerEl, area, q, isObjective); });
+  state.qStart = performance.now();
+}
+function renderClockStatic(pct){
+  const r=25, circumference=2*Math.PI*r; const ring=document.getElementById('timer-ring');
+  ring.setAttribute('stroke-dasharray',circumference); ring.setAttribute('stroke-dashoffset',circumference*(1-pct));
+  let color='#c9a15c'; if(pct<0.5) color='#d9a13b'; if(pct<0.25) color='#c24444'; ring.style.stroke=color;
+  document.getElementById('timer-mini').style.animation = pct<0.25 ? 'pulseCritical 1s ease-in-out infinite' : 'none';
+}
+function renderSpectatorView(match){
+  const q = BANK[match.questionOrder[match.qIndex]];
+  const activeId = match.turnOrder[match.turnIndex % match.turnOrder.length];
+  const activePlayer = state.lobby.players.find(p=>p.id===activeId);
+  document.getElementById('hud-qcount').textContent = `Pregunta ${match.qIndex+1}/20`;
+  document.getElementById('subject-label').textContent = q.subject.toUpperCase();
+  document.getElementById('qtype-label').textContent = TYPE_LABEL[q.type];
+  document.getElementById('qtext').textContent = q.type==='fill' ? q.text.replace('___','______') : q.text;
+  document.getElementById('answers-area').innerHTML = `<div class="waiting-note">Esperando a que <strong>${activePlayer?activePlayer.name:'un aliado'}</strong> responda…</div>`;
+  document.getElementById('feedback-line').textContent = match.log || '\u00A0';
+  renderClockStatic(1);
+}
+
+async function submitAnswerMultiplayer(isCorrect, triggerEl, area, q, isObjective){
+  if(area) area.querySelectorAll('button, input').forEach(el=>el.disabled=true);
+  const responseTimeSec = (performance.now()-state.qStart)/1000;
+  const fb=document.getElementById('feedback-line'), card=document.getElementById('question-card'), flash=document.getElementById('flash-overlay');
+  if(area) flashAnswerVisual(area, triggerEl, q);
+  spawnParticles(isCorrect);
+
+  const match = state.lobby.match;
+  match.answeredCount++;
+
+  if(isCorrect){
+    const r = coreApplyCorrect(match, state.avatar, responseTimeSec, q.type);
+    const bonusDmg = isObjective ? 14 : 0;
+    match.correctCount++; match.redHP = Math.max(0, match.redHP-r.dmg-bonusDmg); match.blueHP = Math.min(100, match.blueHP+r.heal);
+    match.log = `${state.avatar.name} acertó "${q.subject}" y dañó el núcleo rival.`;
+    if(isObjective){ match.buff = {remaining:5, mult:1.5, label:'Bendición del objetivo'}; match.objectivesTriggered.push(match.answeredCount); match.log = `¡${state.avatar.name} aseguró el objetivo de equipo!`; }
+    fb.textContent='\u2713 Correcto — el núcleo rival se resquebraja.'; fb.className='feedback-line good'; flash.className='flash-overlay good';
+  } else {
+    const r = coreApplyWrong(match, state.avatar);
+    const bonusDmg = isObjective ? 8 : 0;
+    match.blueHP = Math.max(0, match.blueHP-r.dmg-bonusDmg);
+    match.log = `${state.avatar.name} falló "${q.subject}". Vuestro núcleo sufre daño.`;
+    fb.textContent=`\u2717 Incorrecto — la respuesta era "${q.type==='bool'?(q.answer?'Verdadero':'Falso'):q.answer}".`; fb.className='feedback-line bad'; flash.className='flash-overlay bad';
+    if(card) card.classList.add('shake');
+  }
+
+  match.qIndex++;
+  match.turnIndex = (match.turnIndex+1) % match.turnOrder.length;
+
+  if(match.blueHP<=0){ match.finished=true; match.winner='red'; }
+  else if(match.redHP<=0){ match.finished=true; match.winner='blue'; }
+  else if(match.qIndex>=20){ match.finished=true; match.winner = match.redHP>match.blueHP ? 'blue' : 'red'; }
+
+  state.myTurnActive=false;
+  await setLobby(state.lobbyCode, state.lobby);
+  updateNexusBars(); updateBuffBanner();
+
+  setTimeout(()=>{ applyRemoteMatchState(state.lobby.match); }, 900);
+}
+
+function endGameMultiplayer(match){
+  clearInterval(turnCountdownHandle); clearInterval(lobbyPollHandle);
+  const won = match.winner==='blue';
+  finishScreen(won, 'nexus', state.avatar, match.correctCount, match.answeredCount, match.blueHP, match.redHP);
+}
+
+/* =========================================================
+   FINAL (compartido)
+   ========================================================= */
+function finishScreen(won, reason, avatar, correctCount, answeredCount, blueHP, redHP){
+  const card=document.getElementById('end-card'); card.className='end-card '+(won?'win':'lose');
+  document.getElementById('end-title').textContent = won ? '¡Núcleo Umbra destruido!' : (reason==='nexus' ? '¡Vuestro núcleo ha caído!' : 'El reloj cósmico colapsa');
+  document.getElementById('end-sub').textContent = won
+    ? `El Equipo Chronos, con ${avatar.name} en la línea, abre una grieta en la Academia Umbra.`
+    : `${avatar.name} y su equipo no lograron sostener la línea a tiempo.`;
+  document.getElementById('stat-correct').textContent = correctCount+'/'+answeredCount;
+  document.getElementById('stat-blue').textContent = Math.max(0,Math.round(blueHP));
+  document.getElementById('stat-red').textContent = Math.max(0,Math.round(redHP));
+  showScreen('screen-end');
+}
+document.getElementById('retry-btn').addEventListener('click', ()=>{
+  clearInterval(lobbyPollHandle); clearInterval(turnCountdownHandle);
+  state = {}; showScreen('screen-home');
+});
+</script>
+</body>
+</html>
